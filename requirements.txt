@@ -1,0 +1,7 @@
+Django==1.9.7
+django-rest-swagger==0.3.8
+djangorestframework==3.3.3
+isodate==0.5.4
+python-dateutil==2.5.3
+requests==2.10.0
+Shapely==1.5.16
