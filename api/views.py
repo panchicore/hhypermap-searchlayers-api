@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from api.utils import parse_geo_box, request_time_facet
-from serializers import TweetsSearchSerializer
+from serializers import SearchSerializer
 
 # - OPEN API specs
 # https://github.com/OAI/OpenAPI-Specification/blob/master/versions/1.2.md#parameterObject
@@ -15,7 +15,7 @@ TEXT_FIELD = "text"
 TIME_SORT_FIELD = "id"
 GEO_SORT_FIELD = "coord"
 
-class TweetsSearch(APIView):
+class Search(APIView):
 
     def get(self, request):
         """
@@ -96,7 +96,7 @@ class TweetsSearch(APIView):
 
         print request.GET
 
-        serializer = TweetsSearchSerializer(data=request.GET)
+        serializer = SearchSerializer(data=request.GET)
         if serializer.is_valid(raise_exception=True):
 
             q_time = serializer.validated_data.get("q_time")

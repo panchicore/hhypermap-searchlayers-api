@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 
 
-class TweetsSearchSerializer(serializers.Serializer):
+class SearchSerializer(serializers.Serializer):
     q_time = serializers.CharField(
         required=False,
         help_text="Constrains docs by time range. Either side can be '*' to signify open-ended. "
