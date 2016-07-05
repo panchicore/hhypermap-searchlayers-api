@@ -8,12 +8,12 @@ from serializers import SearchSerializer
 # - OPEN API specs
 # https://github.com/OAI/OpenAPI-Specification/blob/master/versions/1.2.md#parameterObject
 
-TIME_FILTER_FIELD = "created_at"
-GEO_FILTER_FIELD = "coord_rpt"
-USER_FIELD = "user_name"
-TEXT_FIELD = "text"
-TIME_SORT_FIELD = "id"
-GEO_SORT_FIELD = "coord"
+TIME_FILTER_FIELD = "layer_date"
+GEO_FILTER_FIELD = "bbox"
+USER_FIELD = "layer_originator"
+TEXT_FIELD = "abstract"
+TIME_SORT_FIELD = "layer_date"
+GEO_SORT_FIELD = "bbox"
 
 class Search(APIView):
 
@@ -31,7 +31,7 @@ class Search(APIView):
           required: false
           type: string
           paramType: query
-          defaultValue: "[2013-03-01 TO 2013-04-01T00:00:00]"
+          defaultValue: "[1900-01-01T00:00:00Z TO 2016-01-01T00:00:00Z]"
         - name: q_geo
           description: A rectangular geospatial filter in decimal degrees going from the lower-left to the upper-right. The coordinates are in lat,lon format.
           in: query
@@ -94,8 +94,6 @@ class Search(APIView):
             message: Validation errors.
         """
 
-        print request.GET
-
         serializer = SearchSerializer(data=request.GET)
         if serializer.is_valid(raise_exception=True):
 
@@ -124,6 +122,10 @@ class Search(APIView):
             # query params for filters
             filters = []
             if q_time:
+                # TODO: when user sends incomplete dates like 2000, its completed: 2000-(TODAY-MONTH)-(TODAY-DAY)T00:00:00Z
+                # TODO: "Invalid Date in Date Math String:'[* TO 2000-12-05T00:00:00Z]'"
+                # Kotlin like: "{!field f=layer_date tag=layer_date}[* TO 2000-12-05T00:00:00Z]"
+                # then do it simple:
                 filters.append("{0}:{1}".format(TIME_FILTER_FIELD, q_time))
             if q_geo:
                 filters.append("{0}:{1}".format(GEO_FILTER_FIELD, q_geo))
