@@ -150,9 +150,8 @@ class TweetsSearch(APIView):
                 params.update(facet_parms)
 
             # solr request
-            collection = "bop"
-            solr_url = "http://localhost:8983/solr/{}/select".format(collection)
-            # http://54.221.223.91:8983/solr/#/hypermap2/query
+            collection = "hypermap2"
+            solr_url = "http://54.221.223.91:8983/solr/{}/select".format(collection)
 
             res = requests.get(
                 solr_url, params=params
