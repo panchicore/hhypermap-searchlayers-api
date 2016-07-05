@@ -227,21 +227,4 @@ def request_heatmap_facet(field, hm_filter, hm_grid_level, hm_limit):
 
 
 def request_field_facet(field, limit, ex_filter=True):
-    """
-    simple facet field query builder
-    :param field: field
-    :param limit: facet counts to be returned
-    :param ex_filter:
-    :return:
-    """
-
-    facet_limit_key = 'f.{}.facet.limit'.format(field)
-    if ex_filter:
-        field = "{!ex=%s}%s" % (field, field)
-    params = {
-        'facet': 'on',
-        'facet.field': field,
-        facet_limit_key: limit
-    }
-    #get_params = urllib.urlencode(params)
-    return params
+    pass

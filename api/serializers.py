@@ -54,6 +54,18 @@ class SearchSerializer(serializers.Serializer):
         required=False,
         help_text="From what time range to divide by a.time.gap into intervals. Defaults to q.time and otherwise 90 days."
     )
+    a_text_limit = serializers.IntegerField(
+        required=False,
+        help_text="Returns the most frequently occurring words. WARNING: There is usually a significant performance "
+                  "hit in this due to the extremely high cardinality.",
+        default=0
+    )
+    a_user_limit = serializers.IntegerField(
+        required=False,
+        help_text="Returns the most frequently occurring users.",
+        default=0
+    )
+
 
 
     def validate_q_time(self, value):

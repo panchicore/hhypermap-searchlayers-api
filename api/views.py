@@ -2,7 +2,7 @@ import requests
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-from api.utils import parse_geo_box, request_time_facet
+from api.utils import parse_geo_box, request_time_facet, request_field_facet
 from serializers import SearchSerializer
 
 # - OPEN API specs
@@ -11,7 +11,7 @@ from serializers import SearchSerializer
 TIME_FILTER_FIELD = "layer_date"
 GEO_FILTER_FIELD = "bbox"
 USER_FIELD = "layer_originator"
-TEXT_FIELD = "abstract"
+TEXT_FIELD = "title"
 TIME_SORT_FIELD = "layer_date"
 GEO_SORT_FIELD = "bbox"
 
@@ -87,6 +87,24 @@ class Search(APIView):
           type: string
           paramType: query
 
+        - name: a_text_limit
+          description: "Returns the most frequently occurring words. WARNING: There is usually a significant performance hit in this due to the extremely high cardinality."
+          in: query
+          required: false
+          type: integer
+          paramType: query
+          defaultValue: "0"
+        - name: a_user_limit
+          description: Returns the most frequently occurring users.
+          in: query
+          required: false
+          type: integer
+          paramType: query
+          defaultValue: "0"
+
+
+
+
         responseMessages:
           - code: 200
             message: Search completed.
@@ -106,6 +124,8 @@ class Search(APIView):
             a_time_limit = serializer.validated_data.get("a_time_limit")
             a_time_gap = serializer.validated_data.get("a_time_gap")
             a_time_filter = serializer.validated_data.get("a_time_filter")
+            a_text_limit = serializer.validated_data.get("a_text_limit")
+            a_user_limit = serializer.validated_data.get("a_user_limit")
 
             print serializer.validated_data
 
@@ -114,7 +134,9 @@ class Search(APIView):
                 "q": "*:*",
                 "indent": "on",
                 "wt": "json",
-                "rows": d_docs_limit
+                "rows": d_docs_limit,
+                "facet": "off",
+                "facet.field": []
             }
             if q_text:
                 params["q"] = q_text
@@ -130,7 +152,7 @@ class Search(APIView):
             if q_geo:
                 filters.append("{0}:{1}".format(GEO_FILTER_FIELD, q_geo))
             if q_user:
-                filters.append("{!field f=%s tag=%s}%s" % (USER_FIELD, USER_FIELD, q_user))
+                filters.append("{{!field f={0} tag={0}}}{1}".format(USER_FIELD, q_user))
             if filters: params["fq"] = filters
 
             # query params for ordering
@@ -150,6 +172,16 @@ class Search(APIView):
                 time_filter = a_time_filter or q_time or None
                 facet_parms = request_time_facet(TIME_FILTER_FIELD, time_filter, a_time_gap, a_time_limit)
                 params.update(facet_parms)
+
+            if a_text_limit > 0:
+                params["facet"] = 'on'
+                params["facet.field"].append(TEXT_FIELD)
+                params["f.{}.facet.limit".format(TEXT_FIELD)] = a_text_limit
+
+            if a_user_limit > 0:
+                params["facet"] = 'on'
+                params["facet.field"].append("{{! ex={0}}}{0}".format(USER_FIELD))
+                params["f.{}.facet.limit".format(USER_FIELD)] = a_user_limit
 
             # solr request
             collection = "hypermap2"
