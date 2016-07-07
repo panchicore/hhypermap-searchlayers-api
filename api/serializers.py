@@ -54,6 +54,26 @@ class SearchSerializer(serializers.Serializer):
         required=False,
         help_text="From what time range to divide by a.time.gap into intervals. Defaults to q.time and otherwise 90 days."
     )
+
+    a_hm_limit = serializers.IntegerField(
+        required=False,
+        help_text="Non-0 triggers heatmap/grid faceting. This number is a soft maximum on thenumber of cells it should have. "
+                  "There may be as few as 1/4th this number in return. Note that a.hm.gridLevel can effectively ignore "
+                  "this value. The response heatmap contains a counts grid that can be null or contain null rows when "
+                  "all its values would be 0. See Solr docs for more details on the response format.",
+        default=0
+    )
+    a_hm_gridlevel = serializers.IntegerField(
+        required=False,
+        help_text="To explicitly specify the grid level, e.g. to let a user ask for greater or courser resolution "
+                  "than the most recent request. Ignores a.hm.limit."
+    )
+    a_hm_filter = serializers.CharField(
+        required=False,
+        help_text="To explicitly specify the grid level, e.g. to let a user ask for greater or courser resolution "
+                  "than the most recent request. Ignores a.hm.limit."
+    )
+
     a_text_limit = serializers.IntegerField(
         required=False,
         help_text="Returns the most frequently occurring words. WARNING: There is usually a significant performance "

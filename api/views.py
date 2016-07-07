@@ -2,7 +2,7 @@ import requests
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-from api.utils import parse_geo_box, request_time_facet, request_field_facet
+from api.utils import parse_geo_box, request_time_facet, request_field_facet, request_heatmap_facet
 from serializers import SearchSerializer, SearchResponse, Timing
 
 # - OPEN API specs
@@ -10,6 +10,7 @@ from serializers import SearchSerializer, SearchResponse, Timing
 
 TIME_FILTER_FIELD = "layer_date"
 GEO_FILTER_FIELD = "bbox"
+GEO_HEATMAP_FIELD = "bbox"
 USER_FIELD = "layer_originator"
 TEXT_FIELD = "title"
 TIME_SORT_FIELD = "layer_date"
@@ -86,7 +87,30 @@ class Search(APIView):
           required: false
           type: string
           paramType: query
-
+        - name: a_hm_limit
+          description: Non-0 triggers heatmap/grid faceting. This number is a soft maximum on thenumber of cells it should have. There may be as few as 1/4th this number in return. Note that a.hm.gridLevel can effectively ignore this value. The response heatmap contains a counts grid that can be null or contain null rows when all its values would be 0. See Solr docs for more details on the response format.
+          in: query
+          required: false
+          type: integer
+          paramType: query
+          defaultValue: "0"
+          maximun: 10000
+          minimun: 0
+        - name: a_hm_gridlevel
+          description: "To explicitly specify the grid level, e.g. to let a user ask for greater or courser resolution than the most recent request.  Ignores a.hm.limit."
+          in: query
+          required: false
+          type: integer
+          paramType: query
+          defaultValue: "0"
+          maximun: 100
+          minimun: 1
+        - name: a_hm_filter
+          description: From what region to plot the heatmap. Defaults to q.geo or otherwise the world.
+          in: query
+          required: false
+          type: string
+          paramType: query
         - name: a_text_limit
           description: "Returns the most frequently occurring words. WARNING: There is usually a significant performance hit in this due to the extremely high cardinality."
           in: query
@@ -128,6 +152,9 @@ class Search(APIView):
             a_time_limit = serializer.validated_data.get("a_time_limit")
             a_time_gap = serializer.validated_data.get("a_time_gap")
             a_time_filter = serializer.validated_data.get("a_time_filter")
+            a_hm_limit = serializer.validated_data.get("a_hm_limit")
+            a_hm_gridlevel = serializer.validated_data.get("a_hm_gridlevel")
+            a_hm_filter = serializer.validated_data.get("a_hm_filter")
             a_text_limit = serializer.validated_data.get("a_text_limit")
             a_user_limit = serializer.validated_data.get("a_user_limit")
             return_solr_original_response = serializer.validated_data.get("return_solr_original_response")
@@ -179,6 +206,11 @@ class Search(APIView):
                 facet_parms = request_time_facet(TIME_FILTER_FIELD, time_filter, a_time_gap, a_time_limit)
                 params.update(facet_parms)
 
+            if a_hm_limit > 0:
+                params["facet"] = 'on'
+                hm_facet_params = request_heatmap_facet(GEO_HEATMAP_FIELD, a_hm_filter, a_hm_gridlevel, a_hm_limit)
+                params.update(hm_facet_params)
+
             if a_text_limit > 0:
                 params["facet"] = 'on'
                 params["facet.field"].append(TEXT_FIELD)
@@ -196,6 +228,8 @@ class Search(APIView):
             res = requests.get(
                 solr_url, params=params
             )
+
+            print '>',  res.url
 
             solr_response = res.json()
             solr_response["solr_request"] = res.url
@@ -221,7 +255,11 @@ class Search(APIView):
                 }
                 data["a.time"] = a_time
 
-            data["a.hm"] = "#TODO"
+            if a_hm_limit > 0:
+                # TODO: organize this
+                hm_facet = solr_response["facet_counts"]["facet_heatmaps"][GEO_HEATMAP_FIELD]
+                data["a.hm"] = hm_facet
+
 
             if a_user_limit > 0:
                 user_facet = solr_response["facet_counts"]["facet_fields"][USER_FIELD]
