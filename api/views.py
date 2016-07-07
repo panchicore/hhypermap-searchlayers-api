@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from api.utils import parse_geo_box, request_time_facet, request_field_facet
-from serializers import SearchSerializer
+from serializers import SearchSerializer, SearchResponse, Timing
 
 # - OPEN API specs
 # https://github.com/OAI/OpenAPI-Specification/blob/master/versions/1.2.md#parameterObject
@@ -31,7 +31,7 @@ class Search(APIView):
           required: false
           type: string
           paramType: query
-          defaultValue: "[1900-01-01T00:00:00Z TO 2016-01-01T00:00:00Z]"
+          defaultValue: "[1900-01-01 TO 2016-01-01T00:00:00]"
         - name: q_geo
           description: A rectangular geospatial filter in decimal degrees going from the lower-left to the upper-right. The coordinates are in lat,lon format.
           in: query
@@ -101,9 +101,13 @@ class Search(APIView):
           type: integer
           paramType: query
           defaultValue: "0"
-
-
-
+        - name: return_solr_original_response
+          description: Just for debugging purposes when 1 will return the original solr response.
+          in: query
+          required: false
+          type: integer
+          paramType: query
+          defaultValue: "0"
 
         responseMessages:
           - code: 200
@@ -126,6 +130,7 @@ class Search(APIView):
             a_time_filter = serializer.validated_data.get("a_time_filter")
             a_text_limit = serializer.validated_data.get("a_text_limit")
             a_user_limit = serializer.validated_data.get("a_user_limit")
+            return_solr_original_response = serializer.validated_data.get("return_solr_original_response")
 
             print serializer.validated_data
 
@@ -136,7 +141,8 @@ class Search(APIView):
                 "wt": "json",
                 "rows": d_docs_limit,
                 "facet": "off",
-                "facet.field": []
+                "facet.field": [],
+                "debug": "timing"
             }
             if q_text:
                 params["q"] = q_text
@@ -194,9 +200,62 @@ class Search(APIView):
             solr_response = res.json()
             solr_response["solr_request"] = res.url
 
-            return Response(solr_response)
+            if return_solr_original_response > 0:
+                return Response(solr_response)
 
+            # create the response dict following the swagger model:
+            data = {}
+            response = solr_response["response"]
+            data["a.matchDocs"] = response.get("numFound")
 
+            if response.get("docs"):
+                data["d.docs"] = response.get("docs")
 
+            if a_time_limit > 0:
+                date_facet = solr_response["facet_counts"]["facet_ranges"][TIME_FILTER_FIELD]
+                a_time = {
+                    "start": date_facet.get("start"),
+                    "end": date_facet.get("end"),
+                    "gap": date_facet.get("gap"),
+                    "counts": date_facet.get("counts")
+                }
+                data["a.time"] = a_time
 
+            data["a.hm"] = "#TODO"
 
+            if a_user_limit > 0:
+                user_facet = solr_response["facet_counts"]["facet_fields"][USER_FIELD]
+                data["a.user"] = user_facet
+
+            if a_text_limit > 0:
+                text_facet = solr_response["facet_counts"]["facet_fields"][TEXT_FIELD]
+                data["a.text"] = text_facet
+
+            subs = []
+            for label, values in solr_response["debug"]["timing"].iteritems():
+                if type(values) is not dict:
+                    continue
+                subs_data = {"label": label, "subs": []}
+                for label, values in values.iteritems():
+                    if type(values) is not dict:
+                        subs_data["millis"] = values
+                        continue
+                    subs_data["subs"].append({
+                        "label": label,
+                        "millis": values.get("time")
+                    })
+                subs.append(subs_data)
+
+            timing = {
+                "label": "requests.get.elapsed",
+                "millis": res.elapsed,
+                "subs": [{
+                    "label": "QTime",
+                    "millis": solr_response["responseHeader"].get("QTime"),
+                    "subs": subs
+                }]
+            }
+
+            data["timing"] = timing
+
+            return Response(data)

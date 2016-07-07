@@ -65,6 +65,12 @@ class SearchSerializer(serializers.Serializer):
         help_text="Returns the most frequently occurring users.",
         default=0
     )
+    return_solr_original_response = serializers.IntegerField(
+        required=False,
+        help_text="Returns te original solr response.",
+        default=0
+    )
+
 
 
 
@@ -114,4 +120,14 @@ class SearchSerializer(serializers.Serializer):
 
 
 
+
+class Timing(serializers.Serializer):
+    label = serializers.CharField()
+    millis = serializers.IntegerField()
+    subs = serializers.ListField()
+
+class SearchResponse(serializers.Serializer):
+    a_matchDocs = serializers.IntegerField(default=0)
+    d_docs = serializers.ListField(required=False)
+    timing = Timing(required=False)
 
