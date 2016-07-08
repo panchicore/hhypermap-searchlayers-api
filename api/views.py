@@ -164,7 +164,7 @@ class Search(APIView):
                 data = self.solr(serializer)
             else:
                 data = self.elasticsearch(serializer)
-            return Response(data)
+            return Response(data, headers={'Access-Control-Allow-Origin': '*'})
 
     def solr(self, serializer):
         """
