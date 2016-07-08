@@ -5,6 +5,15 @@ from rest_framework import serializers
 
 
 class SearchSerializer(serializers.Serializer):
+    search_engine = serializers.ChoiceField(
+        help_text="Where will be running the search.",
+        choices=["solr", "elasticsearch"]
+    )
+    search_engine_endpoint = serializers.URLField(
+        required=True,
+        help_text="Endpoint URL",
+    )
+
     q_time = serializers.CharField(
         required=False,
         help_text="Constrains docs by time range. Either side can be '*' to signify open-ended. "

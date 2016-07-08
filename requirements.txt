@@ -6,3 +6,4 @@ isodate==0.5.4
 python-dateutil==2.5.3
 requests==2.10.0
 Shapely==1.5.16
+django-cors-headers==1.1.0
