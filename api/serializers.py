@@ -94,9 +94,9 @@ class SearchSerializer(serializers.Serializer):
         help_text="Returns the most frequently occurring users.",
         default=0
     )
-    return_solr_original_response = serializers.IntegerField(
+    return_search_engine_original_response = serializers.IntegerField(
         required=False,
-        help_text="Returns te original solr response.",
+        help_text="Returns te original search engine response.",
         default=0
     )
 
