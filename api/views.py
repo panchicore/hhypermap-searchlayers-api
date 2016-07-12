@@ -219,15 +219,15 @@ class Search(APIView):
           required: true
           type: string
           paramType: query
-          defaultValue: "solr"
+          defaultValue: "elasticsearch"
           enum: [ "solr", "elasticsearch" ]
         - name: search_engine_endpoint
-          description: "Endpoint url (test in ES http://52.41.158.6:9200/hypermap/_search)"
+          description: "Endpoint url (test in SOLR http://54.221.223.91:8983/solr/hypermap2/select)"
           in: query
           required: true
           type: string
           paramType: query
-          defaultValue: "http://54.221.223.91:8983/solr/hypermap2/select"
+          defaultValue: "http://52.41.158.6:9200/hypermap/_search"
         - name: q_time
           description: Constrains docs by time range. Either side can be '*' to signify open-ended. Otherwise it must be in either format as given in the example. UTC time zone is implied.
           in: query
